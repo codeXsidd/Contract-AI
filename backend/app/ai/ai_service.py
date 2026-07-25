@@ -1,14 +1,23 @@
 import re
-import spacy
+
+try:
+    import spacy
+except ImportError:
+    spacy = None
+
 from typing import Dict, Any, List
 from app.core_config import settings
 from app.schemas.schemas import NegotiationRecommendation
 
 # Load SpaCy small English model for basic NER
-try:
-    nlp = spacy.load("en_core_web_sm")
-except OSError:
-    # Fallback to simple matching if model not downloaded yet
+if spacy:
+    try:
+        nlp = spacy.load("en_core_web_sm")
+    except Exception:
+        # Model not available
+        nlp = None
+else:
+    # SpaCy not installed
     nlp = None
 
 # Regex patterns for Indian & Global PII elements
@@ -17,7 +26,6 @@ PAN_REGEX = r"\b[A-Z]{5}[0-9]{4}[A-Z]\b"
 PASSPORT_REGEX = r"\b[A-PR-WYa-pr-wy][1-9]\d\s?\d{4}[1-9]\b"
 EMAIL_REGEX = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b"
 PHONE_REGEX = r"\b(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"
-
 class AIService:
     @staticmethod
     def detect_pii(text: str) -> Dict[str, Any]:
