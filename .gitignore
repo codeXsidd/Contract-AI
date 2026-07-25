@@ -1,0 +1,21 @@
+# ============================================================
+# CONTRACT AI — ROOT .gitignore
+# ============================================================
+
+# Environment files (NEVER commit these — they contain API keys)
+.env
+.env.local
+.env.production
+.env.staging
+*.env
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+# .vscode/settings.json
+
+.idea/
+
+# Logs
+*.log
+logs/

@@ -1,0 +1,36 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+
+# Environment files (NEVER commit — contain API keys)
+.env
+.env.local
+.env.production
+
+# Temp files created during contract parsing
+contracts_temp/
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+
+# Logs
+*.log
+
+# FAISS index files (large binary)
+*.index
+*.faiss
+
+# OS
+.DS_Store
+Thumbs.db
