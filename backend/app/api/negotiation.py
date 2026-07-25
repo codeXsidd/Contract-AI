@@ -3,7 +3,7 @@ from app.middleware.auth import get_current_user
 from app.database.connection import get_db
 from app.schemas.schemas import ApiResponse, NegotiationResponse, NegotiationSimulationRequest
 
-router = APIRouter(prefix="/negotiate", tags=["AI Negotiation"])
+router = APIRouter(prefix="/negotiation", tags=["AI Negotiation"])
 
 @router.post("/{contract_id}/analyze", response_model=ApiResponse)
 async def analyze_negotiation(
@@ -42,3 +42,39 @@ async def analyze_negotiation(
             "recommendations": recommendations
         }
     }
+
+@router.get("/{contract_id}", response_model=ApiResponse)
+async def get_negotiation_session(
+    contract_id: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    return {
+        "success": True,
+        "data": {
+            "contract_id": contract_id,
+            "negotiation_score": 62,
+            "risk_reduction_pct": 35,
+            "status": "in_progress"
+        }
+    }
+
+@router.post("/{contract_id}/simulate", response_model=ApiResponse)
+async def simulate_clause_negotiation(
+    contract_id: str,
+    req: NegotiationSimulationRequest,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    return {
+        "success": True,
+        "data": {
+            "contract_id": contract_id,
+            "clause_id": req.clause_id,
+            "new_text": req.new_text,
+            "simulated_risk_score": 25,
+            "improvement_pct": 18,
+            "verdict": "Acceptable win-win clause modification"
+        }
+    }
+

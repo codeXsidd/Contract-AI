@@ -42,3 +42,69 @@ def test_pdf_report_generation():
     })
     assert isinstance(pdf_bytes, bytes)
     assert len(pdf_bytes) > 500
+
+def test_contract_sub_endpoints():
+    # Search
+    res = client.get("/api/contracts/search?q=TechCorp")
+    assert res.status_code == 200
+    assert "data" in res.json()
+
+    # Versions
+    res = client.get("/api/contracts/1/versions")
+    assert res.status_code == 200
+    assert "data" in res.json()
+
+    # Status update
+    res = client.patch("/api/contracts/1/status", json={"status": "active"})
+    assert res.status_code == 200
+    assert res.json()["data"]["status"] == "active"
+
+def test_chat_and_negotiation_endpoints():
+    # Chat message
+    res = client.post("/api/chat/1", json={"message": "Summarize this contract", "target_language": "en"})
+    assert res.status_code == 200
+    assert "response" in res.json()
+
+    # Chat history
+    res = client.get("/api/chat/1/history")
+    assert res.status_code == 200
+
+    # Negotiation analyze
+    res = client.post("/api/negotiation/1/analyze")
+    assert res.status_code == 200
+    assert "recommendations" in res.json()["data"]
+
+    # Negotiation simulate
+    res = client.post("/api/negotiation/1/simulate", json={"clause_id": "cl1", "new_text": "Updated liability text"})
+    assert res.status_code == 200
+
+def test_analytics_and_lifecycle_endpoints():
+    # Dashboard stats
+    res = client.get("/api/analytics/dashboard")
+    assert res.status_code == 200
+    assert "total_contracts" in res.json()["data"]
+
+    # Upload trends
+    res = client.get("/api/analytics/upload-trends")
+    assert res.status_code == 200
+
+    # Risk distribution
+    res = client.get("/api/analytics/risk-distribution")
+    assert res.status_code == 200
+
+    # Compliance trends
+    res = client.get("/api/analytics/compliance-trends")
+    assert res.status_code == 200
+
+    # Deadlines
+    res = client.get("/api/lifecycle/deadlines")
+    assert res.status_code == 200
+
+    # Obligations
+    res = client.get("/api/lifecycle/obligations")
+    assert res.status_code == 200
+
+    # Update obligation
+    res = client.patch("/api/lifecycle/obligations/ob1", json={"status": "completed"})
+    assert res.status_code == 200
+

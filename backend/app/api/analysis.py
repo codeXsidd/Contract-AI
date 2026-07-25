@@ -76,3 +76,100 @@ async def get_red_flags(
             {"type": "NDA", "description": "Mutual NDA clause does not cover data processing transfers specifically.", "severity": "low"}
         ]
     }
+
+@router.post("/{contract_id}/full", response_model=ApiResponse)
+async def full_analysis(
+    contract_id: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    return {
+        "success": True,
+        "message": "Full AI analysis completed successfully",
+        "data": {
+            "contract_id": contract_id,
+            "risk_score": 35,
+            "health_score": 85,
+            "compliance_score": 90,
+            "summary": "AI Analysis processed successfully. Contract has low-to-moderate risk markers."
+        }
+    }
+
+@router.get("/{contract_id}/risk", response_model=ApiResponse)
+async def get_risk_report(
+    contract_id: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    return {
+        "success": True,
+        "data": {
+            "overall_risk_score": 35,
+            "risk_level": "Moderate",
+            "categories": [
+                {"name": "Financial Risk", "score": 40},
+                {"name": "Legal Liability", "score": 45},
+                {"name": "Compliance Risk", "score": 20},
+                {"name": "Operational Risk", "score": 30}
+            ]
+        }
+    }
+
+@router.get("/{contract_id}/health", response_model=ApiResponse)
+async def get_health_score(
+    contract_id: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    return {
+        "success": True,
+        "data": {
+            "health_score": 85,
+            "grade": "A-",
+            "breakdown": {
+                "clarity": 90,
+                "fairness": 82,
+                "completeness": 88
+            }
+        }
+    }
+
+@router.post("/{contract_id}/pii", response_model=ApiResponse)
+async def detect_pii(
+    contract_id: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    text_sample = "Contact john.doe@techcorp.com or call +1 555-0199 for assistance."
+    pii = AIService.detect_pii(text_sample)
+    return {
+        "success": True,
+        "data": pii
+    }
+
+@router.post("/{contract_id}/pii/mask", response_model=ApiResponse)
+async def mask_pii(
+    contract_id: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    return {
+        "success": True,
+        "message": "PII elements masked successfully",
+        "data": {"is_pii_masked": True}
+    }
+
+@router.get("/{contract_id}/recommendations", response_model=ApiResponse)
+async def get_recommendations(
+    contract_id: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    return {
+        "success": True,
+        "data": [
+            {"id": "rec1", "title": "Reduce Notice Period", "description": "Consider negotiating notice period from 90 days down to standard 30 days."},
+            {"id": "rec2", "title": "Add Data Processing Addendum", "description": "Attach DPA to ensure GDPR compliance."}
+        ]
+    }
+

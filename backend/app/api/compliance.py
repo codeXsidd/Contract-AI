@@ -42,9 +42,29 @@ async def check_compliance(
             "recommendations": ["Include Business Associate Agreement (BAA)"]
         })
         
+        
     return {
         "success": True,
         "data": {
             "results": results
         }
     }
+
+@router.get("/{contract_id}", response_model=ApiResponse)
+async def get_compliance_report(
+    contract_id: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    return {
+        "success": True,
+        "data": {
+            "contract_id": contract_id,
+            "overall_compliance_score": 87,
+            "frameworks": [
+                {"id": "gdpr", "name": "GDPR", "score": 87, "status": "Compliant"},
+                {"id": "hipaa", "name": "HIPAA", "score": 82, "status": "Minor Gaps"}
+            ]
+        }
+    }
+

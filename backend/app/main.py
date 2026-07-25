@@ -37,6 +37,7 @@ app.include_router(contracts_router, prefix=settings.API_V1_STR)
 app.include_router(analysis_router, prefix=settings.API_V1_STR)
 app.include_router(chat_router, prefix=settings.API_V1_STR)
 app.include_router(negotiation_router, prefix=settings.API_V1_STR)
+app.include_router(radar_router, prefix=settings.API_V1_STR)
 app.include_router(compliance_router, prefix=settings.API_V1_STR)
 app.include_router(compare_router, prefix=settings.API_V1_STR)
 app.include_router(similarity_router, prefix=settings.API_V1_STR)
@@ -44,7 +45,7 @@ app.include_router(reports_router, prefix=settings.API_V1_STR)
 app.include_router(analytics_router, prefix=settings.API_V1_STR)
 app.include_router(lifecycle_router, prefix=settings.API_V1_STR)
 app.include_router(insights_nextgen_router, prefix=settings.API_V1_STR)
-app.include_router(radar_router, prefix=settings.API_V1_STR)
+
 
 @app.get("/")
 def read_root():

@@ -36,3 +36,32 @@ async def get_deadlines(
         "success": True,
         "data": deadlines
     }
+
+@router.get("/expiring", response_model=ApiResponse)
+async def get_expiring_contracts(
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    expiring = [
+        {"id": "3", "contract_id": "c3", "contract_title": "Vendor Agreement Q2", "type": "expiry", "date": "2024-07-25", "status": "today", "days_remaining": 0},
+        {"id": "1", "contract_id": "c1", "contract_title": "Microsoft Azure SLA", "type": "renewal", "date": "2024-08-01", "status": "upcoming", "days_remaining": 7}
+    ]
+    return {
+        "success": True,
+        "data": expiring
+    }
+
+@router.patch("/obligations/{obligation_id}", response_model=ApiResponse)
+async def update_obligation_status(
+    obligation_id: str,
+    body: dict,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    new_status = body.get("status", "completed")
+    return {
+        "success": True,
+        "message": f"Obligation {obligation_id} updated to {new_status}",
+        "data": {"id": obligation_id, "status": new_status}
+    }
+

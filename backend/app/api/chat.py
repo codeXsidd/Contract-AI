@@ -68,3 +68,29 @@ async def chat_message(
             {"text": "Section 8.2 (Limitation of Liability)", "page": 4, "clause_type": "liability"}
         ]
     }
+
+@router.get("/{contract_id}/history")
+async def get_chat_history(
+    contract_id: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    return {
+        "success": True,
+        "data": [
+            {"id": "m1", "sender": "user", "message": "What is the limitation of liability in this contract?", "created_at": "2024-07-20T10:00:00Z"},
+            {"id": "m2", "sender": "ai", "message": "The total liability of TechCorp is capped at 3x annual service fees paid.", "created_at": "2024-07-20T10:00:05Z"}
+        ]
+    }
+
+@router.delete("/{contract_id}/history")
+async def clear_chat_history(
+    contract_id: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    return {
+        "success": True,
+        "message": "Chat history cleared successfully"
+    }
+

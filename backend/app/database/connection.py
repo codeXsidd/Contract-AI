@@ -151,10 +151,55 @@ class MockDB:
         self.last_result = updated_items
         return self
         
-    def eq(self, column, value):
-        self.filters.append((column, value))
+    def delete(self):
+        items = self._storage.get(self.current_table, [])
+        remaining = []
+        deleted = []
+        for item in items:
+            match = True
+            for f in self.filters:
+                if len(f) == 3:
+                    f_col, f_val, op = f
+                    if op == "eq" and str(item.get(f_col)) != str(f_val):
+                        match = False
+                        break
+                else:
+                    f_col, f_val = f
+                    if str(item.get(f_col)) != str(f_val):
+                        match = False
+                        break
+            if match:
+                deleted.append(item)
+            else:
+                remaining.append(item)
+        self._storage[self.current_table] = remaining
+        self.last_result = deleted
         return self
-        
+
+    def ilike(self, column, value):
+        val_clean = str(value).replace("%", "").lower()
+        self.filters.append((column, val_clean, "ilike"))
+        return self
+
+    def like(self, column, value):
+        val_clean = str(value).replace("%", "")
+        self.filters.append((column, val_clean, "like"))
+        return self
+
+    def order(self, column, desc=False):
+        return self
+
+    def limit(self, count):
+        return self
+
+    def in_(self, column, values):
+        self.filters.append((column, values, "in"))
+        return self
+
+    def eq(self, column, value):
+        self.filters.append((column, value, "eq"))
+        return self
+
     def execute(self):
         if hasattr(self, "last_result"):
             res = self.last_result
@@ -167,10 +212,26 @@ class MockDB:
         filtered = []
         for item in items:
             match = True
-            for f_col, f_val in self.filters:
-                if str(item.get(f_col)) != str(f_val):
-                    match = False
-                    break
+            for f in self.filters:
+                if len(f) == 3:
+                    f_col, f_val, op = f
+                    if op == "eq" and str(item.get(f_col)) != str(f_val):
+                        match = False
+                        break
+                    elif op == "ilike" and str(f_val) not in str(item.get(f_col, "")).lower():
+                        match = False
+                        break
+                    elif op == "like" and str(f_val) not in str(item.get(f_col, "")):
+                        match = False
+                        break
+                    elif op == "in" and item.get(f_col) not in f_val:
+                        match = False
+                        break
+                else:
+                    f_col, f_val = f
+                    if str(item.get(f_col)) != str(f_val):
+                        match = False
+                        break
             if match:
                 filtered.append(item)
                 
@@ -181,16 +242,20 @@ class MockDB:
 supabase_client = None
 
 try:
-    # Use the anon key (publishable key) — this is the correct key for server-side access
     api_key = settings.SUPABASE_KEY or settings.SUPABASE_ANON_KEY
     if api_key and settings.SUPABASE_URL and "your-project" not in settings.SUPABASE_URL:
-        supabase_client = create_client(settings.SUPABASE_URL, api_key)
-        logger.info("✅ Supabase client initialized successfully")
+        test_client = create_client(settings.SUPABASE_URL, api_key)
+        # Verify query to remote database table with UUID user_id
+        test_res = test_client.table("contracts").select("id").eq("user_id", "00000000-0000-0000-0000-000000000000").limit(1).execute()
+        supabase_client = test_client
+        logger.info("✅ Supabase client initialized and verified successfully")
     else:
         raise ValueError("Supabase credentials not configured")
 except Exception as e:
-    logger.warning(f"⚠️  Failed to initialize Supabase client: {e}. Falling back to Mock DB Client for local development.")
+    logger.warning(f"⚠️ Could not verify Supabase connection: {e}. Falling back to Mock DB Client for local development.")
     supabase_client = MockDB()
+
 
 def get_db():
     return supabase_client
+

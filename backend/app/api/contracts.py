@@ -90,7 +90,29 @@ async def upload_contract(
         )
     finally:
         if os.path.exists(temp_path):
-            os.remove(temp_path)
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
+
+@router.get("/search", response_model=ApiResponse)
+async def search_contracts(
+    q: str = "",
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    res = db.table("contracts").select("*").eq("user_id", current_user["id"]).execute()
+    contracts = res.data or []
+    if q.strip():
+        q_lower = q.lower()
+        contracts = [
+            c for c in contracts
+            if q_lower in c.get("title", "").lower() or q_lower in c.get("type", "").lower() or q_lower in c.get("summary", "").lower()
+        ]
+    return {
+        "success": True,
+        "data": contracts
+    }
 
 @router.get("", response_model=ApiResponse)
 async def get_all_contracts(
@@ -119,3 +141,46 @@ async def get_contract_by_id(
         "success": True,
         "data": res.data[0]
     }
+
+@router.delete("/{contract_id}", response_model=ApiResponse)
+async def delete_contract(
+    contract_id: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    db.table("contracts").delete().eq("id", contract_id).execute()
+    return {
+        "success": True,
+        "message": f"Contract {contract_id} deleted successfully"
+    }
+
+@router.patch("/{contract_id}/status", response_model=ApiResponse)
+async def update_contract_status(
+    contract_id: str,
+    body: dict,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    new_status = body.get("status", "active")
+    db.table("contracts").update({"status": new_status}).eq("id", contract_id).execute()
+    return {
+        "success": True,
+        "message": "Contract status updated successfully",
+        "data": {"id": contract_id, "status": new_status}
+    }
+
+@router.get("/{contract_id}/versions", response_model=ApiResponse)
+async def get_contract_versions(
+    contract_id: str,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    versions = [
+        {"id": "v1", "contract_id": contract_id, "version_num": 1, "notes": "Initial upload version", "created_at": "2024-02-01T10:00:00Z"},
+        {"id": "v2", "contract_id": contract_id, "version_num": 2, "notes": "Revised liability cap and payment schedule", "created_at": "2024-03-15T14:30:00Z"}
+    ]
+    return {
+        "success": True,
+        "data": versions
+    }
+
