@@ -5,7 +5,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 class MockDB:
     """Fallback mock database client for local dev when Supabase isn't configured."""
@@ -41,8 +41,8 @@ class MockDB:
                     "is_pii_masked": False,
                     "language": "English",
                     "version": 1,
-                    "created_at": datetime.utcnow().isoformat(),
-                    "updated_at": datetime.utcnow().isoformat()
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat()
                 },
                 {
                     "id": "2",
@@ -62,8 +62,8 @@ class MockDB:
                     "is_pii_masked": False,
                     "language": "English",
                     "version": 1,
-                    "created_at": datetime.utcnow().isoformat(),
-                    "updated_at": datetime.utcnow().isoformat()
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat()
                 },
                 {
                     "id": "3",
@@ -83,8 +83,8 @@ class MockDB:
                     "is_pii_masked": False,
                     "language": "English",
                     "version": 1,
-                    "created_at": datetime.utcnow().isoformat(),
-                    "updated_at": datetime.utcnow().isoformat()
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat()
                 }
             ]
             self._storage["contracts"].extend(demo_contracts)
@@ -122,7 +122,7 @@ class MockDB:
                 if "id" not in item_copy:
                     item_copy["id"] = str(uuid.uuid4())
                 if "created_at" not in item_copy:
-                    item_copy["created_at"] = datetime.utcnow().isoformat()
+                    item_copy["created_at"] = datetime.now(timezone.utc).isoformat()
                 self._storage.setdefault(self.current_table, []).append(item_copy)
                 inserted.append(item_copy)
             self.last_result = inserted
@@ -131,7 +131,7 @@ class MockDB:
             if "id" not in item_copy:
                 item_copy["id"] = str(uuid.uuid4())
             if "created_at" not in item_copy:
-                item_copy["created_at"] = datetime.utcnow().isoformat()
+                item_copy["created_at"] = datetime.now(timezone.utc).isoformat()
             self._storage.setdefault(self.current_table, []).append(item_copy)
             self.last_result = [item_copy]
         return self

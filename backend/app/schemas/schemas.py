@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from typing import List, Optional, Any, Dict
 from datetime import datetime, date
 
@@ -55,8 +55,7 @@ class ContractResponse(ContractBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ============================================================
 # CLAUSE SCHEMAS
@@ -71,8 +70,7 @@ class ClauseResponse(BaseModel):
     severity: Optional[int] = None
     page_number: Optional[int] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ============================================================
 # COMPLIANCE SCHEMAS
