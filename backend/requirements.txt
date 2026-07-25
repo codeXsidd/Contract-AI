@@ -23,7 +23,7 @@ faiss-cpu>=1.7.4
 
 # Report Generation
 reportlab==4.2.2
-pillow==10.3.0
+pillow>=11.3.0
 
 # Security
 python-jose[cryptography]==3.3.0
