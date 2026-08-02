@@ -175,24 +175,43 @@ export default function Login() {
             </p>
           </div>
 
-          {/* Google OAuth */}
-          <button
-            onClick={signInWithGoogle}
-            style={{
-              width: '100%', padding: '12px',
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '12px', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-              color: '#e2e8f0', fontSize: '14px', fontWeight: 500,
-              transition: 'all 0.2s', marginBottom: '24px',
-            }}
-            onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
-            onMouseOut={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
-          >
-            <Globe size={18} />
-            Continue with Google
-          </button>
+          {/* Google OAuth & Demo Access */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+            <button
+              onClick={signInWithGoogle}
+              style={{
+                width: '100%', padding: '12px',
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '12px', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                color: '#e2e8f0', fontSize: '14px', fontWeight: 500,
+                transition: 'all 0.2s',
+              }}
+              onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
+              onMouseOut={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+            >
+              <Globe size={18} />
+              Continue with Google
+            </button>
+
+            <button
+              onClick={() => signIn('demo@contractai.com', 'demo123')}
+              style={{
+                width: '100%', padding: '12px',
+                background: 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15))',
+                border: '1px solid rgba(139,92,246,0.3)',
+                borderRadius: '12px', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                color: '#a78bfa', fontSize: '14px', fontWeight: 600,
+                transition: 'all 0.2s',
+              }}
+              onMouseOver={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(59,130,246,0.25), rgba(139,92,246,0.25))')}
+              onMouseOut={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15))')}
+            >
+              ⚡ Instant Demo / Guest Sign-In
+            </button>
+          </div>
 
           {/* Divider */}
           <div style={{
@@ -202,6 +221,7 @@ export default function Login() {
             <span style={{ fontSize: '12px', color: '#334155' }}>or sign in with email</span>
             <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
           </div>
+
 
           {/* Form */}
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
