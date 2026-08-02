@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   FileText, AlertTriangle, CheckCircle, Clock, TrendingUp, TrendingDown,
@@ -12,9 +12,10 @@ import {
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { getRiskColor } from '../utils'
+import { contractsApi } from '../services/api'
 
 // ============================================================
-// MOCK DATA (replace with real API calls via React Query)
+// MOCK DATA for charts (replace with real API calls via React Query)
 // ============================================================
 const uploadTrends = [
   { month: 'Feb', count: 12 },
@@ -157,6 +158,41 @@ export default function Dashboard() {
   const { user } = useAuth()
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'User'
 
+  // Fetch real contract data
+  const [contracts, setContracts] = useState<any[]>([])
+  const [statsLoaded, setStatsLoaded] = useState(false)
+
+  useEffect(() => {
+    contractsApi.getAll().then(res => {
+      const data = res.data?.data || res.data || []
+      setContracts(Array.isArray(data) ? data : [])
+      setStatsLoaded(true)
+    }).catch(() => setStatsLoaded(true))
+  }, [])
+
+  // Compute real stats from fetched contracts
+  const totalContracts = contracts.length
+  const activeContracts = contracts.filter(c => c.status === 'active').length
+  const highRiskContracts = contracts.filter(c => (c.risk_score || 0) >= 60).length
+  const expiringSoon = contracts.filter(c => {
+    if (!c.expiry_date) return false
+    const diff = (new Date(c.expiry_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    return diff > 0 && diff <= 30
+  }).length
+  const avgCompliance = totalContracts > 0
+    ? Math.round(contracts.reduce((sum, c) => sum + (c.compliance_score || 85), 0) / totalContracts)
+    : 0
+  const avgHealth = totalContracts > 0
+    ? Math.round(contracts.reduce((sum, c) => sum + (c.health_score || 80), 0) / totalContracts)
+    : 0
+
+  // Update risk distribution chart from real data
+  const realRiskDist = [
+    { name: 'Safe', value: contracts.filter(c => (c.risk_score || 0) < 35).length, color: '#10b981' },
+    { name: 'Moderate', value: contracts.filter(c => (c.risk_score || 0) >= 35 && (c.risk_score || 0) < 60).length, color: '#f59e0b' },
+    { name: 'High Risk', value: contracts.filter(c => (c.risk_score || 0) >= 60).length, color: '#ef4444' },
+  ]
+
   return (
     <div className="page-container">
       {/* Header Banner */}
@@ -196,13 +232,14 @@ export default function Dashboard() {
           marginBottom: '24px',
         }}
       >
-        <StatCard label="Total Contracts" value="147" icon={FileText} iconColor="#3b82f6" iconBg="rgba(59,130,246,0.15)" trend={{ value: 12, positive: true }} />
-        <StatCard label="Active Contracts" value="89" icon={Activity} iconColor="#10b981" iconBg="rgba(16,185,129,0.15)" trend={{ value: 8, positive: true }} />
-        <StatCard label="High Risk Contracts" value="23" icon={AlertTriangle} iconColor="#ef4444" iconBg="rgba(239,68,68,0.15)" trend={{ value: 3, positive: false }} />
-        <StatCard label="Expiring Soon" value="7" icon={Clock} iconColor="#f59e0b" iconBg="rgba(245,158,11,0.15)" subtitle="Next 30 days" />
-        <StatCard label="Compliance Score" value="87%" icon={Shield} iconColor="#a855f7" iconBg="rgba(168,85,247,0.15)" trend={{ value: 5, positive: true }} />
-        <StatCard label="Avg Health Score" value="84" icon={Scale} iconColor="#06b6d4" iconBg="rgba(6,182,212,0.15)" trend={{ value: 9, positive: true }} />
+        <StatCard label="Total Contracts" value={totalContracts} icon={FileText} iconColor="#3b82f6" iconBg="rgba(59,130,246,0.15)" />
+        <StatCard label="Active Contracts" value={activeContracts} icon={Activity} iconColor="#10b981" iconBg="rgba(16,185,129,0.15)" />
+        <StatCard label="High Risk Contracts" value={highRiskContracts} icon={AlertTriangle} iconColor="#ef4444" iconBg="rgba(239,68,68,0.15)" />
+        <StatCard label="Expiring Soon" value={expiringSoon} icon={Clock} iconColor="#f59e0b" iconBg="rgba(245,158,11,0.15)" subtitle="Next 30 days" />
+        <StatCard label="Compliance Score" value={`${avgCompliance}%`} icon={Shield} iconColor="#a855f7" iconBg="rgba(168,85,247,0.15)" />
+        <StatCard label="Avg Health Score" value={avgHealth} icon={Scale} iconColor="#06b6d4" iconBg="rgba(6,182,212,0.15)" />
       </motion.div>
+
 
       {/* Charts Row 1 */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px', marginBottom: '16px' }}>
@@ -241,8 +278,8 @@ export default function Dashboard() {
           </div>
           <ResponsiveContainer width="100%" height={160}>
             <PieChart>
-              <Pie data={riskDistribution} cx="50%" cy="50%" innerRadius={50} outerRadius={72} paddingAngle={3} dataKey="value">
-                {riskDistribution.map((entry, index) => (
+              <Pie data={realRiskDist} cx="50%" cy="50%" innerRadius={50} outerRadius={72} paddingAngle={3} dataKey="value">
+                {realRiskDist.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} stroke="transparent" />
                 ))}
               </Pie>
@@ -250,13 +287,13 @@ export default function Dashboard() {
             </PieChart>
           </ResponsiveContainer>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
-            {riskDistribution.map(d => (
+            {realRiskDist.map(d => (
               <div key={d.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: d.color }} />
                   <span style={{ fontSize: '13px', color: '#94a3b8' }}>{d.name}</span>
                 </div>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: d.color }}>{d.value}%</span>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: d.color }}>{d.value}</span>
               </div>
             ))}
           </div>

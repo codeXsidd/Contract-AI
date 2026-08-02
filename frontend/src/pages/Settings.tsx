@@ -35,16 +35,16 @@ export default function Settings() {
   ]
 
   const themes: { mode: ThemeMode; label: string; desc: string; icon: any }[] = [
-    { mode: 'system', label: 'System Preference', desc: 'Sync automatically with OS dark/light mode', icon: Monitor },
-    { mode: 'dark', label: 'Dark Mode', desc: 'Optimized high-contrast dark enterprise interface', icon: Moon },
-    { mode: 'light', label: 'Light Mode', desc: 'Clean high-visibility daylight interface', icon: Sun },
+    { mode: 'system', label: t('systemPreference'), desc: t('systemPreferenceDesc'), icon: Monitor },
+    { mode: 'dark', label: t('darkMode'), desc: t('darkModeDesc'), icon: Moon },
+    { mode: 'light', label: t('lightMode'), desc: t('lightModeDesc'), icon: Sun },
   ]
 
   return (
     <div className="page-container" style={{ maxWidth: '850px' }}>
       <div style={{ marginBottom: '24px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#f1f5f9', marginBottom: '4px' }}>{t('settings')}</h1>
-        <p style={{ fontSize: '14px', color: '#64748b' }}>Manage your organization preferences, multilingual settings, and system themes</p>
+        <p style={{ fontSize: '14px', color: '#64748b' }}>{t('settingsDescription')}</p>
       </div>
 
       <div style={{ display: 'grid', gap: '24px' }}>
@@ -55,8 +55,8 @@ export default function Settings() {
               <Globe size={18} color="#3b82f6" />
             </div>
             <div>
-              <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#f1f5f9', margin: 0 }}>Multilingual Support</h3>
-              <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>Select your preferred platform & AI response language</p>
+              <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#f1f5f9', margin: 0 }}>{t('multilingualSupport')}</h3>
+              <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>{t('multilingualSupportDescription')}</p>
             </div>
           </div>
 
@@ -99,8 +99,8 @@ export default function Settings() {
               <Monitor size={18} color="#a855f7" />
             </div>
             <div>
-              <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#f1f5f9', margin: 0 }}>System Preference & Appearance</h3>
-              <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>Configure interface themes or sync automatically with OS preferences</p>
+              <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#f1f5f9', margin: 0 }}>{t('systemAppearance')}</h3>
+              <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>{t('systemAppearanceDescription')}</p>
             </div>
           </div>
 
@@ -145,12 +145,12 @@ export default function Settings() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="chart-container">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
             <User size={18} color="#3b82f6" />
-            <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#f1f5f9', margin: 0 }}>Profile Information</h3>
+            <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#f1f5f9', margin: 0 }}>{t('profileInfo')}</h3>
           </div>
 
           <form onSubmit={handleSave} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
-              <label className="input-label">Full Name</label>
+              <label className="input-label">{t('fullName')}</label>
               <input
                 type="text"
                 className="input"
@@ -159,7 +159,7 @@ export default function Settings() {
               />
             </div>
             <div>
-              <label className="input-label">Organization</label>
+              <label className="input-label">{t('organization')}</label>
               <input
                 type="text"
                 className="input"
@@ -170,7 +170,7 @@ export default function Settings() {
 
             <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
               <button type="submit" className="btn btn-primary" disabled={saving}>
-                {saving ? 'Saving Preferences...' : 'Save Settings'}
+                {saving ? t('savingPreferences') : t('saveSettings')}
               </button>
             </div>
           </form>

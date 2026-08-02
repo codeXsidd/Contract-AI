@@ -175,9 +175,10 @@ export default function Login() {
             </p>
           </div>
 
-          {/* Google OAuth & Demo Access */}
+          {/* Google OAuth */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
             <button
+              type="button"
               onClick={signInWithGoogle}
               style={{
                 width: '100%', padding: '12px',
@@ -193,23 +194,6 @@ export default function Login() {
             >
               <Globe size={18} />
               Continue with Google
-            </button>
-
-            <button
-              onClick={() => signIn('demo@contractai.com', 'demo123')}
-              style={{
-                width: '100%', padding: '12px',
-                background: 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15))',
-                border: '1px solid rgba(139,92,246,0.3)',
-                borderRadius: '12px', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                color: '#a78bfa', fontSize: '14px', fontWeight: 600,
-                transition: 'all 0.2s',
-              }}
-              onMouseOver={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(59,130,246,0.25), rgba(139,92,246,0.25))')}
-              onMouseOut={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15))')}
-            >
-              ⚡ Instant Demo / Guest Sign-In
             </button>
           </div>
 
