@@ -41,30 +41,41 @@ async def upload_contract(
         shutil.copyfileobj(file.file, buffer)
         
     try:
-        # Parse document content
+        # Parse document content from real PDF / DOCX
         parsed = DocumentParser.parse_file(temp_path)
-        content_text = parsed["text"]
+        content_text = parsed.get("text", "")
         
-        # PII Detection and Summary
-        pii = AIService.detect_pii(content_text)
-        summary = content_text[:300] + "..." # basic initial summary
+        # Real AI/NLP Analysis on extracted text
+        pii = AIService.detect_pii(content_text) if content_text else {"privacy_score": 100}
+        extracted_clauses = AIService.extract_clauses(content_text) if content_text else []
         
-        # Save payload to Supabase Database
+        # Real summary from PDF text
+        clean_text = " ".join(content_text.split()) if content_text else ""
+        summary = clean_text[:400] + "..." if len(clean_text) > 400 else clean_text or f"Contract uploaded: {title}"
+        
+        # Calculate real dynamic risk score based on extracted clauses & PII
+        high_risks = sum(1 for c in extracted_clauses if c.get("risk_level") == "high" or c.get("severity", 0) >= 4)
+        mod_risks = sum(1 for c in extracted_clauses if c.get("risk_level") == "moderate" or c.get("severity", 0) == 3)
+        calculated_risk = min(95, max(15, 20 + (high_risks * 25) + (mod_risks * 10)))
+        health_score = max(10, 100 - calculated_risk)
+        compliance_score = max(50, pii.get("privacy_score", 90))
+
+        # Save contract payload to Database
         contract_data = {
             "user_id": current_user["id"],
             "title": title,
             "type": type,
-            "status": "draft",
+            "status": "active",
             "effective_date": str(effective_date) if effective_date else None,
             "expiry_date": str(expiry_date) if expiry_date else None,
-            "value": value,
+            "value": value or 0.0,
             "currency": currency,
             "file_url": f"storage://contracts/{file.filename}",
-            "risk_score": 40, # default placeholder score before LLM analysis
-            "health_score": 80,
-            "compliance_score": 85,
+            "risk_score": calculated_risk,
+            "health_score": health_score,
+            "compliance_score": compliance_score,
             "summary": summary,
-            "is_pii_masked": False,
+            "is_pii_masked": pii.get("privacy_score", 100) < 90,
             "language": "English",
             "version": 1
         }
@@ -76,12 +87,41 @@ async def upload_contract(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to save contract to database"
             )
-            
+        
+        created_contract = res.data[0]
+        contract_id = created_contract["id"]
+
+        # Insert real extracted clauses into clauses table
+        if extracted_clauses:
+            clause_rows = []
+            for idx, cl in enumerate(extracted_clauses):
+                clause_rows.append({
+                    "contract_id": contract_id,
+                    "type": cl.get("type", "general"),
+                    "content": cl.get("content", "")[:1000],
+                    "risk_level": cl.get("risk_level", "moderate"),
+                    "risk_reason": cl.get("risk_reason", "Analysis from extracted PDF text"),
+                    "severity": cl.get("severity", 2),
+                    "page_number": cl.get("page", 1)
+                })
+            try:
+                db.table("clauses").insert(clause_rows).execute()
+            except Exception as cl_err:
+                print(f"Warning: clause storage error: {cl_err}")
+
+        # Build RAG vector store index for instant semantic chat on this uploaded PDF
+        if content_text:
+            try:
+                rag_service.build_vector_store(content_text)
+            except Exception:
+                pass
+
         return {
             "success": True,
             "message": "Contract uploaded and parsed successfully",
-            "data": res.data[0]
+            "data": created_contract
         }
+
         
     except Exception as e:
         raise HTTPException(

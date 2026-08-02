@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from supabase import create_client, Client
 from app.core_config import settings
 import logging
