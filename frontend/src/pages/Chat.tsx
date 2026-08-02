@@ -65,53 +65,90 @@ export default function Chat() {
       timestamp: new Date(),
     }
 
-    const loadingMsg: Message = {
-      id: (Date.now() + 1).toString(),
+    const aiMsgId = (Date.now() + 1).toString()
+    const streamingMsg: Message = {
+      id: aiMsgId,
       role: 'ai',
       content: '',
       timestamp: new Date(),
       loading: true,
     }
 
-    setMessages(prev => [...prev, userMsg, loadingMsg])
+    setMessages(prev => [...prev, userMsg, streamingMsg])
     setIsLoading(true)
 
     try {
-      const res = await chatApi.sendMessage(selectedContract.id, messageText, language)
-      const aiResponse = res.data?.data || res.data
-
-      setMessages(prev => prev.map(m =>
-        m.id === loadingMsg.id
-          ? {
-              ...m,
-              content: aiResponse?.response || aiResponse?.message || 'I analyzed the contract and here is what I found...',
-              citations: aiResponse?.citations || [],
-              loading: false,
-            }
-          : m
-      ))
-    } catch (err) {
-      // Demo response when API is not connected
-      const demoResponses: Record<string, string> = {
-        'summarize': `**Contract Summary**\n\nThis is a Master Service Agreement between TechCorp Inc. and Acme Solutions, effective February 2024.\n\n**Key Terms:**\n- Contract Value: $120,000 annually\n- Term: 12 months with auto-renewal\n- Payment: Net-30 from invoice date\n\n**Critical Dates:**\n- Effective: Feb 1, 2024\n- Expiry: Feb 1, 2025\n- Review Date: Nov 1, 2024`,
-        'risk': `**Risk Analysis**\n\n🔴 **High Risk (2 items):**\n- Section 8.2: Liability cap is 3x contract value — industry standard is 1x\n- Section 12.4: Unilateral termination clause favoring vendor\n\n🟡 **Moderate Risk (3 items):**\n- Payment terms could be tightened\n- IP ownership clause lacks clarity\n\n✅ **Overall Risk Score: 45/100 (Moderate)**`,
-        'payment': `**Payment Terms (Section 5)**\n\nPayment is due within **Net-30 days** from invoice date.\n\n- Late payment penalty: 1.5% per month\n- Preferred method: Wire transfer or ACH\n- Currency: USD only\n- Invoicing frequency: Monthly`,
-        'default': `Based on my analysis of this contract, I found the following:\n\nThe contract establishes a service relationship with clear payment terms and deliverables. There are a few clauses that warrant attention, particularly around liability and termination rights.\n\nWould you like me to go deeper on any specific clause or provision?`,
+      // Try real-time streaming first
+      let streamedContent = ''
+      await new Promise<void>((resolve, reject) => {
+        const controller = chatApi.streamMessage(
+          selectedContract.id,
+          messageText,
+          language,
+          (chunk) => {
+            streamedContent += chunk
+            setMessages(prev => prev.map(m =>
+              m.id === aiMsgId
+                ? { ...m, content: streamedContent, loading: false }
+                : m
+            ))
+          },
+          (citations) => {
+            setMessages(prev => prev.map(m =>
+              m.id === aiMsgId
+                ? { ...m, loading: false, citations }
+                : m
+            ))
+            resolve()
+          }
+        )
+        // Safety timeout
+        setTimeout(() => {
+          if (streamedContent.length === 0) {
+            controller.abort()
+            reject(new Error('Stream timeout'))
+          } else {
+            resolve()
+          }
+        }, 12000)
+      })
+    } catch (_) {
+      // Fallback to standard API if stream fails
+      try {
+        const res = await chatApi.sendMessage(selectedContract.id, messageText, language)
+        const aiResponse = res.data?.data || res.data
+        setMessages(prev => prev.map(m =>
+          m.id === aiMsgId
+            ? {
+                ...m,
+                content: aiResponse?.response || aiResponse?.message || 'I analyzed the contract and found the following details for you.',
+                citations: aiResponse?.citations || [],
+                loading: false,
+              }
+            : m
+        ))
+      } catch (_err) {
+        // Final demo fallback
+        const demoResponses: Record<string, string> = {
+          'summarize': `**Contract Summary**\n\nThis is a Master Service Agreement between TechCorp Inc. and Acme Solutions, effective February 2024.\n\n**Key Terms:**\n- Contract Value: $120,000 annually\n- Term: 12 months with auto-renewal\n- Payment: Net-30 from invoice date\n\n**Critical Dates:**\n- Effective: Feb 1, 2024\n- Expiry: Feb 1, 2025\n- Review Date: Nov 1, 2024`,
+          'risk': `**Risk Analysis**\n\n🔴 **High Risk (2 items):**\n- Section 8.2: Liability cap is 3x contract value — industry standard is 1x\n- Section 12.4: Unilateral termination clause favoring vendor\n\n🟡 **Moderate Risk (3 items):**\n- Payment terms could be tightened\n- IP ownership clause lacks clarity\n\n✅ **Overall Risk Score: 45/100 (Moderate)**`,
+          'payment': `**Payment Terms (Section 5)**\n\nPayment is due within **Net-30 days** from invoice date.\n\n- Late payment penalty: 1.5% per month\n- Preferred method: Wire transfer or ACH\n- Currency: USD only\n- Invoicing frequency: Monthly`,
+          'default': `Based on my analysis of this contract, I found the following:\n\nThe contract establishes a service relationship with clear payment terms and deliverables. There are a few clauses that warrant attention, particularly around liability and termination rights.\n\nWould you like me to go deeper on any specific clause or provision?`,
+        }
+        const key = messageText.toLowerCase().includes('summar') ? 'summarize' :
+                    messageText.toLowerCase().includes('risk') ? 'risk' :
+                    messageText.toLowerCase().includes('payment') ? 'payment' : 'default'
+        setMessages(prev => prev.map(m =>
+          m.id === aiMsgId
+            ? { ...m, content: demoResponses[key], loading: false }
+            : m
+        ))
       }
-
-      const key = messageText.toLowerCase().includes('summar') ? 'summarize' :
-                  messageText.toLowerCase().includes('risk') ? 'risk' :
-                  messageText.toLowerCase().includes('payment') ? 'payment' : 'default'
-
-      setMessages(prev => prev.map(m =>
-        m.id === loadingMsg.id
-          ? { ...m, content: demoResponses[key], loading: false }
-          : m
-      ))
     }
 
     setIsLoading(false)
   }
+
 
   const renderMessage = (content: string) => {
     // Simple markdown-like rendering

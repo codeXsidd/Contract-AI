@@ -59,6 +59,9 @@ export default function UploadContract() {
     setFiles(prev => prev.filter(f => f.id !== id))
   }
 
+  const [analysisStage, setAnalysisStage] = useState<string>('')
+  const [analysisProgress, setAnalysisProgress] = useState(0)
+
   const handleUpload = async () => {
     const idleFiles = files.filter(f => f.status === 'idle')
     if (!idleFiles.length || !metadata.title) return
@@ -84,16 +87,32 @@ export default function UploadContract() {
           ))
         })
 
-        // Processing phase
+        const contractId = res.data?.data?.id
         setFiles(prev => prev.map(f =>
           f.id === uploadFile.id ? { ...f, status: 'processing', progress: 100 } : f
         ))
 
-        // Simulate processing delay then success
-        await new Promise(r => setTimeout(r, 1500))
+        // Connect to real-time SSE analysis stream
+        if (contractId) {
+          await new Promise<void>((resolve) => {
+            const sse = contractsApi.streamAnalysis(contractId, (stepData) => {
+              setAnalysisStage(stepData.stage)
+              setAnalysisProgress(stepData.progress)
+              if (stepData.progress >= 100 || stepData.status === 'completed') {
+                setTimeout(resolve, 400)
+              }
+            })
+            // Safety timeout — resolve after 8s regardless
+            setTimeout(resolve, 8000)
+          })
+        } else {
+          await new Promise(r => setTimeout(r, 1500))
+        }
 
+        setAnalysisStage('')
+        setAnalysisProgress(0)
         setFiles(prev => prev.map(f =>
-          f.id === uploadFile.id ? { ...f, status: 'success', contractId: res.data?.data?.id } : f
+          f.id === uploadFile.id ? { ...f, status: 'success', contractId } : f
         ))
       } catch (err: any) {
         setFiles(prev => prev.map(f =>
@@ -105,6 +124,7 @@ export default function UploadContract() {
       }
     }
   }
+
 
   const contractTypes = [
     { value: 'service_agreement', label: 'Service Agreement' },
@@ -229,20 +249,33 @@ export default function UploadContract() {
                     <div style={{ fontSize: '12px', color: '#475569' }}>
                       {formatFileSize(f.file.size)}
                       {f.status === 'uploading' && ` • Uploading ${f.progress}%`}
-                      {f.status === 'processing' && ' • AI processing...'}
+                      {f.status === 'processing' && (analysisStage
+                        ? <span style={{ color: '#a78bfa', fontWeight: 500 }}> • {analysisStage}</span>
+                        : ' • Initializing AI analysis...'
+                      )}
                       {f.status === 'error' && ` • ${f.error}`}
                     </div>
 
                     {(f.status === 'uploading' || f.status === 'processing') && (
                       <div className="progress-bar" style={{ marginTop: '6px' }}>
                         <div className="progress-fill" style={{
-                          width: f.status === 'processing' ? '100%' : `${f.progress}%`,
-                          background: f.status === 'processing' ? 'linear-gradient(90deg, #3b82f6, #8b5cf6)' : '#3b82f6',
-                          animation: f.status === 'processing' ? 'shimmer 1s infinite' : 'none',
+                          width: f.status === 'processing'
+                            ? `${analysisProgress || 15}%`
+                            : `${f.progress}%`,
+                          background: f.status === 'processing'
+                            ? 'linear-gradient(90deg, #6366f1, #8b5cf6, #a78bfa)'
+                            : '#3b82f6',
+                          transition: 'width 0.3s ease',
                         }} />
                       </div>
                     )}
+                    {f.status === 'processing' && analysisProgress > 0 && (
+                      <div style={{ fontSize: '11px', color: '#6366f1', marginTop: '3px' }}>
+                        {analysisProgress}% complete
+                      </div>
+                    )}
                   </div>
+
 
                   <div style={{ flexShrink: 0 }}>
                     {f.status === 'idle' && (

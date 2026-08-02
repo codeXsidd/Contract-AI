@@ -66,6 +66,23 @@ export const contractsApi = {
 
   search: (query: string) =>
     apiClient.get('/api/contracts/search', { params: { q: query } }),
+
+  streamAnalysis: (contractId: string, onStep: (data: { progress: number; stage: string; status: string }) => void) => {
+    const eventSource = new EventSource(`${API_BASE_URL}/api/contracts/${contractId}/stream-analysis`)
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        onStep(data)
+        if (data.progress >= 100 || data.status === 'completed') {
+          eventSource.close()
+        }
+      } catch (e) {
+        console.error('SSE Error:', e)
+      }
+    }
+    eventSource.onerror = () => eventSource.close()
+    return eventSource
+  },
 }
 
 // ============================================================
@@ -123,7 +140,47 @@ export const chatApi = {
 
   clearHistory: (contractId: string) =>
     apiClient.delete(`/api/chat/${contractId}/history`),
+
+  streamMessage: (
+    contractId: string,
+    message: string,
+    targetLanguage: string = 'en',
+    onChunk: (chunk: string) => void,
+    onDone: (citations: Array<{text: string; page?: number; clause_type?: string}>) => void
+  ) => {
+    // Use fetch with SSE streaming for real-time chat
+    const controller = new AbortController()
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+
+    fetch(`${baseUrl}/api/chat/${contractId}/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, target_language: targetLanguage }),
+      signal: controller.signal,
+    }).then(async (res) => {
+      const reader = res.body?.getReader()
+      const decoder = new TextDecoder()
+      if (!reader) return
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const lines = decoder.decode(value).split('\n')
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6))
+              if (data.chunk) onChunk(data.chunk)
+              if (data.done) onDone(data.citations || [])
+            } catch (_) { /* ignore parse errors */ }
+          }
+        }
+      }
+    }).catch((e) => { if (e.name !== 'AbortError') console.error('Stream error:', e) })
+
+    return controller
+  },
 }
+
 
 // ============================================================
 // NEGOTIATION API

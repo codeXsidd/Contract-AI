@@ -203,3 +203,18 @@ CREATE POLICY "Allow read deadlines" ON public.deadlines FOR SELECT USING (
 CREATE POLICY "Allow insert deadlines" ON public.deadlines FOR INSERT WITH CHECK (
     EXISTS (SELECT 1 FROM public.contracts WHERE id = contract_id AND user_id = auth.uid())
 );
+
+-- ============================================================
+-- SUPABASE STORAGE BUCKET SETUP
+-- ============================================================
+
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('contracts', 'contracts', true)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY "Public Read Access" ON storage.objects
+FOR SELECT USING (bucket_id = 'contracts');
+
+CREATE POLICY "Authenticated User Upload" ON storage.objects
+FOR INSERT WITH CHECK (bucket_id = 'contracts');
+
