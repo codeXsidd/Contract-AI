@@ -89,7 +89,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       return { error: null }
     } catch (error: any) {
-      console.warn('Supabase login failed, falling back to mock authentication:', error.message || error)
+      // If it is a real credential error from Supabase, propagate it so the user knows they need to register/use correct credentials
+      if (
+        error.status === 400 || 
+        error.message?.includes('Invalid login credentials') ||
+        error.message?.includes('Email not confirmed') ||
+        error.message?.includes('Email provider is disabled')
+      ) {
+        console.error('Supabase authentication rejected:', error.message)
+        return { error }
+      }
+
+      console.warn('Supabase login failed due to configuration or connection error, falling back to mock authentication:', error.message || error)
       
       // Fallback to mock session
       const mockSession = {
@@ -136,7 +147,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       return { error: null }
     } catch (error: any) {
-      console.warn('Supabase signup failed, falling back to mock signup:', error.message || error)
+      // If it is a real signup validation error from Supabase, propagate it
+      if (
+        error.status === 400 || 
+        error.status === 422 ||
+        error.message?.includes('already registered') ||
+        error.message?.includes('weak') ||
+        error.message?.includes('invalid')
+      ) {
+        console.error('Supabase signup rejected:', error.message)
+        return { error }
+      }
+
+      console.warn('Supabase signup failed due to configuration or connection error, falling back to mock signup:', error.message || error)
       
       // Fallback: automatically sign in with mock credentials
       return signIn(email, password)
