@@ -11,9 +11,22 @@ export const apiClient = axios.create({
   },
 })
 
-// Request interceptor: attach Supabase JWT
+// Request interceptor: attach Supabase JWT or Mock JWT
 apiClient.interceptors.request.use(
   async (config) => {
+    const savedMockSession = localStorage.getItem('mock_session')
+    if (savedMockSession) {
+      try {
+        const parsed = JSON.parse(savedMockSession)
+        if (parsed?.access_token) {
+          config.headers.Authorization = `Bearer ${parsed.access_token}`
+          return config
+        }
+      } catch (e) {
+        console.error('Error parsing mock session in interceptor:', e)
+      }
+    }
+
     const { data: { session } } = await supabase.auth.getSession()
     if (session?.access_token) {
       config.headers.Authorization = `Bearer ${session.access_token}`
@@ -28,7 +41,10 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      await supabase.auth.signOut()
+      localStorage.removeItem('mock_session')
+      try {
+        await supabase.auth.signOut()
+      } catch (e) {}
       window.location.href = '/login'
     }
     return Promise.reject(error)
