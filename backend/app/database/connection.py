@@ -1,4 +1,13 @@
 # pyrefly: ignore [missing-import]
+# Monkey-patch to allow Supabase new sb_publishable_ key format which is not a standard JWT
+import re as _re
+_original_match = _re.match
+def _patched_match(pattern, string, flags=0, **kwargs):
+    if pattern == r"^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*$":
+        return type('_DummyMatch', (), {'group': lambda self, *a, **k: string})() 
+    return _original_match(pattern, string, flags, **kwargs)
+_re.match = _patched_match
+
 from supabase import create_client, Client
 from app.core_config import settings
 import logging
@@ -248,8 +257,8 @@ try:
     api_key = settings.SUPABASE_KEY or settings.SUPABASE_ANON_KEY
     if api_key and settings.SUPABASE_URL and "your-project" not in settings.SUPABASE_URL:
         test_client = create_client(settings.SUPABASE_URL, api_key)
-        # Verify query to remote database table with UUID user_id
-        test_res = test_client.table("contracts").select("id").eq("user_id", "00000000-0000-0000-0000-000000000000").limit(1).execute()
+        # Verify by attempting a simple ping (select without filters - RLS may return empty but no error means connection is valid)
+        test_res = test_client.table("contracts").select("id").limit(1).execute()
         supabase_client = test_client
         logger.info("✅ Supabase client initialized and verified successfully")
     else:

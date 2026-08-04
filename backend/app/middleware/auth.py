@@ -8,28 +8,18 @@ security = HTTPBearer()
 async def get_current_user(request: Request):
     auth_header = request.headers.get("Authorization")
     
-    # Dev/local fallback if no auth header is present
-    if not auth_header or settings.ENVIRONMENT == "development":
-        # Check if auth header exists and is valid, otherwise use mock
-        if auth_header:
-            parts = auth_header.split()
-            if len(parts) == 2 and parts[0].lower() == "bearer" and parts[1] != "mock-jwt-token":
-                token = parts[1]
-                try:
-                    payload = jwt.decode(
-                        token, 
-                        settings.SUPABASE_ANON_KEY, 
-                        algorithms=[settings.ALGORITHM],
-                        options={"verify_aud": False}
-                    )
-                    user_id = payload.get("sub")
-                    if user_id:
-                        return {"id": user_id, "email": payload.get("email")}
-                except JWTError:
-                    pass # Fall through to mock user in dev
-
-        # Fallback developer user
+    is_dev = settings.ENVIRONMENT == "development"
+    
+    # In development mode with no auth header, return mock user
+    if not auth_header and is_dev:
         return {"id": "00000000-0000-0000-0000-000000000000", "email": "dev@contractai.local"}
+    
+    # No auth header in production -> 401
+    if not auth_header:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header is required",
+        )
 
     parts = auth_header.split()
     if len(parts) != 2 or parts[0].lower() != "bearer":
@@ -40,15 +30,25 @@ async def get_current_user(request: Request):
     
     token = parts[1]
     
-    # Allow mock JWT token in production if environment is dev
+    # Allow mock JWT token in dev mode
     if token == "mock-jwt-token":
-        return {"id": "00000000-0000-0000-0000-000000000000", "email": "dev@contractai.local"}
+        if is_dev:
+            return {"id": "00000000-0000-0000-0000-000000000000", "email": "dev@contractai.local"}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Mock token is not allowed in production. Please login.",
+            )
 
+    # Decode real Supabase JWT
+    # Supabase issues access tokens signed with SUPABASE_JWT_SECRET (not the anon key)
+    # Use the anon key as secret fallback for backward compatibility
+    jwt_secret = settings.SUPABASE_JWT_SECRET or settings.SUPABASE_ANON_KEY
+    
     try:
-        # Supabase uses HS256 JWT with its anon/service key as secret
         payload = jwt.decode(
             token, 
-            settings.SUPABASE_ANON_KEY, 
+            jwt_secret, 
             algorithms=[settings.ALGORITHM],
             options={"verify_aud": False}
         )

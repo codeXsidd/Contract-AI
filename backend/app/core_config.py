@@ -11,6 +11,7 @@ class Settings:
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://your-project.supabase.co")
     SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "your-service-role-key")
     SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "your-anon-key")
+    SUPABASE_JWT_SECRET: str = os.getenv("SUPABASE_JWT_SECRET", "")
     SUPABASE_STORAGE_BUCKET: str = os.getenv("SUPABASE_STORAGE_BUCKET", "contracts")
     
     GROK_API_KEY: str = os.getenv("GROK_API_KEY", "")
