@@ -19,7 +19,13 @@ export default function Login() {
     setError('')
     setIsLoading(true)
     const { error } = await signIn(email, password)
-    if (error) setError(error.message)
+    if (error) {
+      if (error.message === 'Invalid login credentials') {
+        setError('Invalid email or password. If you do not have an account, please register first using the "Create account" link below.')
+      } else {
+        setError(error.message)
+      }
+    }
     setIsLoading(false)
   }
 
