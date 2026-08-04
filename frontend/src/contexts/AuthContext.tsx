@@ -2,6 +2,18 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../services/supabase'
 
+// Returns true if Supabase credentials are missing, placeholder, or not a real JWT anon key
+function isInvalidSupabaseConfig(): boolean {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+  if (!supabaseUrl || !supabaseAnonKey) return true
+  if (supabaseUrl.includes('placeholder') || supabaseAnonKey.includes('placeholder')) return true
+  // Supabase anon keys are JWTs and must start with 'eyJ'
+  // Publishable keys (sb_publishable_...) are NOT valid for the JS client
+  if (!supabaseAnonKey.startsWith('eyJ')) return true
+  return false
+}
+
 interface AuthContextType {
   session: Session | null
   user: User | null
@@ -33,6 +45,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Failed to parse mock session:', e)
         localStorage.removeItem('mock_session')
       }
+    }
+
+    // Skip Supabase entirely if credentials are invalid (e.g. publishable key instead of anon JWT)
+    if (isInvalidSupabaseConfig()) {
+      console.warn('[Contract AI] Supabase credentials are invalid or not configured (key is not a JWT). Running in offline/mock mode.')
+      setLoading(false)
+      return
     }
 
     // Get initial session from Supabase
@@ -73,14 +92,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      // If we detect invalid keys beforehand, directly do mock sign in
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-      if (
-        supabaseUrl.includes('placeholder') || 
-        supabaseAnonKey.includes('placeholder')
-      ) {
-        throw new Error('Supabase credentials are placeholders or invalid. Using fallback mock authentication.')
+      // If credentials are invalid (placeholder or non-JWT publishable key), skip to mock
+      if (isInvalidSupabaseConfig()) {
+        throw new Error('Supabase credentials are invalid (not a JWT anon key). Using fallback mock authentication.')
       }
 
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
@@ -94,7 +108,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error.name === 'AuthApiError' || error.status) {
         if (
           error.message?.toLowerCase().includes('api key') ||
-          error.message?.toLowerCase().includes('apikey')
+          error.message?.toLowerCase().includes('apikey') ||
+          error.message?.toLowerCase().includes('invalid key') ||
+          error.status === 401
         ) {
           // Fall through to mock fallback (configuration error)
         } else {
@@ -131,13 +147,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-      if (
-        supabaseUrl.includes('placeholder') || 
-        supabaseAnonKey.includes('placeholder')
-      ) {
-        throw new Error('Supabase credentials are placeholders or invalid. Using fallback mock signup.')
+      // If credentials are invalid (placeholder or non-JWT publishable key), skip to mock
+      if (isInvalidSupabaseConfig()) {
+        throw new Error('Supabase credentials are invalid (not a JWT anon key). Using fallback mock signup.')
       }
 
       const { data, error } = await supabase.auth.signUp({
@@ -172,13 +184,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-      if (
-        supabaseUrl.includes('placeholder') || 
-        supabaseAnonKey.includes('placeholder')
-      ) {
-        throw new Error('Supabase credentials are placeholders or invalid.')
+      // If credentials are invalid (placeholder or non-JWT publishable key), skip to mock
+      if (isInvalidSupabaseConfig()) {
+        throw new Error('Supabase credentials are invalid (not a JWT anon key).')
       }
 
       const { data, error } = await supabase.auth.signInWithOAuth({
