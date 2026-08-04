@@ -89,15 +89,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       return { error: null }
     } catch (error: any) {
-      // If it is a real credential error from Supabase, propagate it so the user knows they need to register/use correct credentials
-      if (
-        error.status === 400 || 
-        error.message?.includes('Invalid login credentials') ||
-        error.message?.includes('Email not confirmed') ||
-        error.message?.includes('Email provider is disabled')
-      ) {
-        console.error('Supabase authentication rejected:', error.message)
-        return { error }
+      // If it is an AuthApiError or has an HTTP status, it means we connected to Supabase.
+      // If the error is NOT a configuration error (Invalid API Key), propagate it to the user.
+      if (error.name === 'AuthApiError' || error.status) {
+        if (
+          error.message?.toLowerCase().includes('api key') ||
+          error.message?.toLowerCase().includes('apikey')
+        ) {
+          // Fall through to mock fallback (configuration error)
+        } else {
+          console.error('Supabase authentication rejected:', error.message)
+          return { error }
+        }
       }
 
       console.warn('Supabase login failed due to configuration or connection error, falling back to mock authentication:', error.message || error)
@@ -147,16 +150,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       return { error: null }
     } catch (error: any) {
-      // If it is a real signup validation error from Supabase, propagate it
-      if (
-        error.status === 400 || 
-        error.status === 422 ||
-        error.message?.includes('already registered') ||
-        error.message?.includes('weak') ||
-        error.message?.includes('invalid')
-      ) {
-        console.error('Supabase signup rejected:', error.message)
-        return { error }
+      // If it is an AuthApiError or has an HTTP status, propagate validation/registration errors
+      if (error.name === 'AuthApiError' || error.status) {
+        if (
+          error.message?.toLowerCase().includes('api key') ||
+          error.message?.toLowerCase().includes('apikey')
+        ) {
+          // Fall through to mock fallback (configuration error)
+        } else {
+          console.error('Supabase signup rejected:', error.message)
+          return { error }
+        }
       }
 
       console.warn('Supabase signup failed due to configuration or connection error, falling back to mock signup:', error.message || error)
