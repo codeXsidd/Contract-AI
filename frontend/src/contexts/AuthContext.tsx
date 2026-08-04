@@ -78,8 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
       if (
         supabaseUrl.includes('placeholder') || 
-        supabaseAnonKey.includes('placeholder') || 
-        supabaseAnonKey.startsWith('sb_publishable_')
+        supabaseAnonKey.includes('placeholder')
       ) {
         throw new Error('Supabase credentials are placeholders or invalid. Using fallback mock authentication.')
       }
@@ -122,8 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
       if (
         supabaseUrl.includes('placeholder') || 
-        supabaseAnonKey.includes('placeholder') || 
-        supabaseAnonKey.startsWith('sb_publishable_')
+        supabaseAnonKey.includes('placeholder')
       ) {
         throw new Error('Supabase credentials are placeholders or invalid. Using fallback mock signup.')
       }
@@ -151,8 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
       if (
         supabaseUrl.includes('placeholder') || 
-        supabaseAnonKey.includes('placeholder') || 
-        supabaseAnonKey.startsWith('sb_publishable_')
+        supabaseAnonKey.includes('placeholder')
       ) {
         throw new Error('Supabase credentials are placeholders or invalid.')
       }
