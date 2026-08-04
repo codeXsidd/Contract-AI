@@ -7,6 +7,7 @@ from app.middleware.auth import get_current_user
 from app.database.connection import get_db
 from app.services.parser import DocumentParser
 from app.ai.ai_service import AIService
+from app.ai.rag_service import rag_service
 from app.schemas.schemas import ContractResponse, ApiResponse
 
 router = APIRouter(prefix="/contracts", tags=["Contracts"])

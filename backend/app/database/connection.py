@@ -198,6 +198,8 @@ class MockDB:
         return self
 
     def eq(self, column, value):
+        if column == "user_id":
+            return self # Ignore user_id filtering for mock data
         self.filters.append((column, value, "eq"))
         return self
 

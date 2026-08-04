@@ -1,4 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
+import asyncio
+import json
 from pydantic import BaseModel
 from typing import Optional
 from app.middleware.auth import get_current_user
@@ -68,6 +71,48 @@ async def chat_message(
             {"text": "Section 8.2 (Limitation of Liability)", "page": 4, "clause_type": "liability"}
         ]
     }
+
+@router.post("/{contract_id}/stream")
+async def stream_chat_message(
+    contract_id: str,
+    req: ChatMessageRequest,
+    current_user: dict = Depends(get_current_user),
+    db = Depends(get_db)
+):
+    msg = req.message.lower()
+    target_lang = req.target_language or "en"
+    
+    # Retrieve contract from DB
+    res = db.table("contracts").select("*").eq("id", contract_id).execute()
+    contract_data = res.data[0] if res.data else None
+    
+    title = contract_data.get("title", "Contract") if contract_data else "Contract"
+    
+    # Simple simulated stream response
+    async def generate_stream():
+        base_response = f"Based on my analysis of '{title}', here is the answer to your question: '{req.message}'. "
+        if "risk" in msg:
+            base_response += "The overall risk score is moderate (45/100). Key risks include liability caps and unilateral termination clauses."
+        elif "summar" in msg:
+            base_response += "This is a standard agreement detailing the relationship, deliverables, and payment terms."
+        elif "payment" in msg:
+            base_response += "Payment is due within Net-30 days from invoice date with a 1.5% late fee."
+            
+        # Yield the response in chunks
+        words = base_response.split(" ")
+        for word in words:
+            chunk = {"chunk": word + " "}
+            yield f"data: {json.dumps(chunk)}\n\n"
+            await asyncio.sleep(0.05)
+            
+        citations = [
+            {"text": "Section 5.1 (Invoicing cycles)", "page": 2, "clause_type": "payment"},
+            {"text": "Section 8.2 (Limitation of Liability)", "page": 4, "clause_type": "liability"}
+        ]
+        done_chunk = {"done": True, "citations": citations}
+        yield f"data: {json.dumps(done_chunk)}\n\n"
+        
+    return StreamingResponse(generate_stream(), media_type="text/event-stream")
 
 @router.get("/{contract_id}/history")
 async def get_chat_history(
